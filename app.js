@@ -4,7 +4,7 @@ const memberController = require('./route/memberController');
 const app = express();
 
 const port = process.env.port || 3000;
-const host = '192.168.1.77';
+const host = 'YOUR HOST';
 
 app.use(memberController);
 
