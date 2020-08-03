@@ -16,15 +16,23 @@ mongoose.connect('mongodb://localhost:27017/memberDB', {
 
 router.route('/api/member')
 .get((req, res) => {
+
     try {
-        Member.find((err, success) => {
-            if(!err) {
-                res.json({ result : success });
-                console.log('Success');
-            } else {
-                res.json({ message: err });
-            }
+
+        const findMember = new Promise((resolve, reject) => {
+            Member.find((err, success) => {
+                if(err) {
+                    reject(err);
+                }else {
+                    resolve(success);
+                }
+            });
         });
+
+        findMember
+        .then(datas => res.json({ result: datas }))
+        .catch(datas => res.json({ result: datas }));
+
     } catch (error) {
         res.json({ message : error });
     }
@@ -36,37 +44,61 @@ router.route('/api/member')
         var age = req.body.age;
         var address = req.body.address;
 
-        if(res.statusCode == 200) {
+        const newMember = new Promise((resolve, reject) => {
+            if(res.statusCode == 200) {
+                const data = new Member({
+                    name : name,
+                    hobby : hobby,
+                    age : age,
+                    address : address
+                });
+                resolve(data.save());
+            } else {
+                reject("Cannot post data");
+            }
+        });
 
-            const newMember = new Member({
-                name : name,
-                hobby : hobby,
-                age : age,
-                address : address
-            });
-            newMember.save();
+        newMember
+        .then(datas => res.json({ message: "Success post data" + datas }))
+        .catch(datas => res.json({ message: datas }));
 
-            res.json({ message: "Success Post Data" });
-        } else {
-            res.json({ message: "Cannot post data" });
-        }
     } catch (error) {
         res.json({ message: error });
     }
 })
-.delete((req, res) => {
-    var name = req.body.name;
-    Member.deleteOne(
-        {name : name},
-        (err) => {
-            if(!err) {
-                res.json({ message: "Success Delete Data" });
-            } else {
-                res.json({ message : err });
-            }
+.patch((req, res) => {
+    let name = req.body.name;
+    const updateMember = new Promise((resolve, reject) => {
+        let update = Member.updateOne({ name : name })
+        if(res.statusCode == 200) {
+            resolve(update);
+        }else {
+            reject("Cannot update member, check your connection !")
         }
-    )
+    });
+
+    updateMember
+    .then(datas => res.json({ message : "Success update data", updated : datas }))
+    .catch(datas => res.json({ message : datas }));
+})
+.delete((req, res) => {
+    let name = req.body.name;
+    const deleteMember = new Promise((resolve, reject) => {
+        let deleteOne = Member.deleteOne({name : name})
+        setTimeout(() => {
+            if (res.statusCode == 200) {
+                resolve(deleteOne);
+            } else {
+                reject("Cannot Delete Member, Check Your Connection !");
+            }
+        }, 1000);
+    });
+
+    deleteMember
+    .then(datas => res.json({ message : "Success Delete Data", deleted : datas }))
+    .catch(datas => res.json({ message : datas }));
 });
+
 
 router.route('/api/member/?name')
 .patch((req, res) => {
@@ -94,7 +126,5 @@ router.route('/api/member/?name')
         }
     )
 });
-
-
 
 module.exports = router;
